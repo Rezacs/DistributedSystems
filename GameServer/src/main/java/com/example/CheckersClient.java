@@ -63,12 +63,17 @@ public class CheckersClient extends Application {
                 int w = obj.get("whiteScore").getAsInt();
                 int b = obj.get("blackScore").getAsInt();
                 piecesLabel.setText("Pieces left - W: " + w + ", B: " + b);
+
+                // New: If any side has less than 6, declare the other side as winner!
+                if (w < 6 && b >= 6) {
+                    winnerLabel.setText("WINNER: Black (B) 🎉");
+                    turnLabel.setText("Game over!");
+                } else if (b < 6 && w >= 6) {
+                    winnerLabel.setText("WINNER: White (W) 🎉");
+                    turnLabel.setText("Game over!");
+                }
             }
-            if (obj.has("winner") && !obj.get("winner").isJsonNull()) {
-                String winner = obj.get("winner").getAsString();
-                winnerLabel.setText("WINNER: " + winner + " 🎉");
-                turnLabel.setText("Game over!");
-            }
+
 
 
             boardGrid.getChildren().clear(); // Clear previous buttons

@@ -157,12 +157,12 @@ public class GameServer {
                 state.put("blackScore", game.countPieces("b"));
                 String winner = game.checkWinner();
                 if (winner != null) state.put("winner", winner);
-                return gson.toJson(state);
+                return gson.toJson(state); // <--- must be return!
             } else {
-                return gson.toJson(Collections.singletonMap("error", "Not found"));
+                return gson.toJson(Collections.singletonMap("error", "Not found")); // <--- must be return!
             }
-            System.out.println("W: " + game.countPieces("w") + " B: " + game.countPieces("b"));
         });
+
 
 
         // Handle a move with turn and move validation
