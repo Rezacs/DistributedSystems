@@ -42,12 +42,17 @@ public class GameServer {
 
         // Attempt to join the game as player2
         public boolean join(String player) {
+            if (player.equals(player1) || player.equals(player2)) {
+                // Allow rejoining by original players
+                return true;
+            }
             if (player2 == null && !player.equals(player1)) {
                 player2 = player;
                 return true;
             }
             return false;
         }
+
 
         // Get color for current player ("w" or "b")
         public String getCurrentPlayerColor() {
@@ -133,6 +138,13 @@ public class GameServer {
             String gameId = body.get("gameId");
             String player = body.get("player");
 
+            System.out.println("JOIN attempt: player='" + player + "' gameId='" + gameId + "'");
+
+            // Don't allow null/empty names
+            if (player == null || player.trim().isEmpty()) {
+                return gson.toJson(Collections.singletonMap("error", "Name required"));
+            }
+
             CheckersGame game = games.get(gameId);
             if (game != null && game.join(player)) {
                 return gson.toJson(Collections.singletonMap("status", "joined"));
@@ -140,6 +152,8 @@ public class GameServer {
                 return gson.toJson(Collections.singletonMap("error", "Cannot join"));
             }
         });
+
+
 
         // Get current game state
         get("/gamestate/:gameId", (req, res) -> {
@@ -184,6 +198,21 @@ public class GameServer {
             boolean ok = game.move(player, fromRow, fromCol, toRow, toCol);
             return gson.toJson(Collections.singletonMap("status", ok ? "move ok" : "illegal move or not your turn"));
         });
+
+        get("/games", (req, res) -> {
+            List<Map<String, Object>> gameList = new ArrayList<>();
+            for (CheckersGame game : games.values()) {
+                Map<String, Object> g = new HashMap<>();
+                g.put("gameId", game.gameId);
+                g.put("player1", game.player1);
+                g.put("player2", game.player2);
+                // Optionally, show if the game is full or still waiting for player2
+                g.put("isOpen", game.player2 == null);
+                gameList.add(g);
+            }
+            return gson.toJson(gameList);
+        });
+
     }
 }
 

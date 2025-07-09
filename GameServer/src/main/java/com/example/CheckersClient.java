@@ -7,6 +7,9 @@ import javafx.scene.layout.*;
 import javafx.stage.Stage;
 import kong.unirest.Unirest;
 import com.google.gson.*;
+import java.util.Map;
+import java.util.HashMap;
+
 
 public class CheckersClient extends Application {
 
@@ -17,6 +20,9 @@ public class CheckersClient extends Application {
     private Label turnLabel = new Label("Turn: ");
     private Label winnerLabel = new Label("Winner: ");
     private Label piecesLabel = new Label("Pieces left - W: 12, B: 12");
+    private ListView<String> gamesListView = new ListView<>();
+    private Map<String, String> gameIdByListItem = new HashMap<>();
+
 
 
     public static void main(String[] args) {
@@ -168,6 +174,41 @@ public class CheckersClient extends Application {
             }
         });
 
+        Button refreshGamesButton = new Button("Refresh Game List");
+        refreshGamesButton.setOnAction(e -> {
+            var res = Unirest.get("http://localhost:8081/games").asString();
+            JsonArray arr = JsonParser.parseString(res.getBody()).getAsJsonArray();
+            gamesListView.getItems().clear();
+            gameIdByListItem.clear();
+            for (JsonElement el : arr) {
+                JsonObject obj = el.getAsJsonObject();
+                String gameId = obj.get("gameId").getAsString();
+                String player1 = obj.has("player1") && !obj.get("player1").isJsonNull() ? obj.get("player1").getAsString() : "";
+                String player2 = obj.has("player2") && !obj.get("player2").isJsonNull() ? obj.get("player2").getAsString() : "";
+                boolean isOpen = obj.has("isOpen") && obj.get("isOpen").getAsBoolean();
+                String label = "ID: " + gameId + " | P1: " + player1 + " | P2: " + player2 + (isOpen ? " [JOINABLE]" : " [FULL]");
+                gamesListView.getItems().add(label);
+                gameIdByListItem.put(label, gameId);
+            }
+        });
+
+        Button joinSelectedButton = new Button("Join Selected Game");
+        joinSelectedButton.setOnAction(e -> {
+            String selected = gamesListView.getSelectionModel().getSelectedItem();
+            String userName = nameField.getText();
+            if (userName == null || userName.trim().isEmpty()) {
+                statusLabel.setText("Please enter your name before joining!");
+                return;
+            }
+            if (selected != null && gameIdByListItem.containsKey(selected)) {
+                joinGameField.setText(gameIdByListItem.get(selected));
+                joinButton.fire();
+            }
+        });
+
+
+
+
         // 🧱 Layout setup
         VBox root = new VBox(8,
             new Label("Name:"), nameField,
@@ -179,7 +220,8 @@ public class CheckersClient extends Application {
             turnLabel,    // <--- add this
             piecesLabel,  // <-- add
             winnerLabel,
-            boardGrid
+            boardGrid,
+            refreshGamesButton, gamesListView, joinSelectedButton
         );
 
 
