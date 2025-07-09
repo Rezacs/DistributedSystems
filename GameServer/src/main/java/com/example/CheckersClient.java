@@ -59,9 +59,9 @@ public class CheckersClient extends Application {
             }
 
             // After updating turnLabel:
-            if (obj.has("whiteLeft") && obj.has("blackLeft")) {
-                int w = obj.get("whiteLeft").getAsInt();
-                int b = obj.get("blackLeft").getAsInt();
+            if (obj.has("whiteScore") && obj.has("blackScore")) {
+                int w = obj.get("whiteScore").getAsInt();
+                int b = obj.get("blackScore").getAsInt();
                 piecesLabel.setText("Pieces left - W: " + w + ", B: " + b);
             }
             if (obj.has("winner") && !obj.get("winner").isJsonNull()) {

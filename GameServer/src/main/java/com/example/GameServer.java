@@ -161,6 +161,7 @@ public class GameServer {
             } else {
                 return gson.toJson(Collections.singletonMap("error", "Not found"));
             }
+            System.out.println("W: " + game.countPieces("w") + " B: " + game.countPieces("b"));
         });
 
 
