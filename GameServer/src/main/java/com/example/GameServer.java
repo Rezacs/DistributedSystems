@@ -26,15 +26,19 @@ public class GameServer {
         // Initializes the board with standard checkers layout
         private void initBoard() {
             for (String[] row : board) Arrays.fill(row, "empty");
-            // Black pieces (top 3 rows)
+
+            // Black
             for (int i = 0; i < 3; i++)
-                for (int j = (i + 1) % 2; j < 8; j += 2)
+                for (int j = (i % 2); j < 8; j += 2)
                     board[i][j] = "b";
-            // White pieces (bottom 3 rows)
-            for (int i = 5; i < 8; i++)
-                for (int j = (i + 1) % 2; j < 8; j += 2)
+            // White
+            for (int i = 4; i < 8; i++)
+                for (int j = (i % 2); j < 8; j += 2)
                     board[i][j] = "w";
+
         }
+
+
 
         // Attempt to join the game as player2
         public boolean join(String player) {

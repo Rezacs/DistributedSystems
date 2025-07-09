@@ -15,6 +15,9 @@ public class CheckersClient extends Application {
     private int selectedRow = -1, selectedCol = -1; // Tracks the selected "from" cell
     private TextField gameIdField = new TextField();
     private Label turnLabel = new Label("Turn: ");
+    private Label winnerLabel = new Label("Winner: ");
+    private Label piecesLabel = new Label("Pieces left - W: 12, B: 12");
+
 
     public static void main(String[] args) {
         launch(args);
@@ -54,6 +57,19 @@ public class CheckersClient extends Application {
                     statusLabel.setText("Waiting for " + whoseTurn + " ...");
                 }
             }
+
+            // After updating turnLabel:
+            if (obj.has("whiteLeft") && obj.has("blackLeft")) {
+                int w = obj.get("whiteLeft").getAsInt();
+                int b = obj.get("blackLeft").getAsInt();
+                piecesLabel.setText("Pieces left - W: " + w + ", B: " + b);
+            }
+            if (obj.has("winner") && !obj.get("winner").isJsonNull()) {
+                String winner = obj.get("winner").getAsString();
+                winnerLabel.setText("WINNER: " + winner + " 🎉");
+                turnLabel.setText("Game over!");
+            }
+
 
             boardGrid.getChildren().clear(); // Clear previous buttons
 
@@ -156,6 +172,8 @@ public class CheckersClient extends Application {
             statusLabel,
             new Label("Current Game ID:"), gameIdField,
             turnLabel,    // <--- add this
+            piecesLabel,  // <-- add
+            winnerLabel,
             boardGrid
         );
 
