@@ -178,7 +178,7 @@ public class CheckersClient extends Application {
         );
 
 
-        primaryStage.setScene(new Scene(root, 400, 450));
+        primaryStage.setScene(new Scene(root, 400, 900));
         primaryStage.setTitle("Checkers Client");
         primaryStage.show();
     }

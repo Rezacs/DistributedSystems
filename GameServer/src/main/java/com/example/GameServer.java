@@ -32,7 +32,7 @@ public class GameServer {
                 for (int j = (i % 2); j < 8; j += 2)
                     board[i][j] = "b";
             // White
-            for (int i = 4; i < 8; i++)
+            for (int i = 5; i < 8; i++)
                 for (int j = (i % 2); j < 8; j += 2)
                     board[i][j] = "w";
 
@@ -94,7 +94,21 @@ public class GameServer {
 
             return false;
         }
+        public int countPieces(String color) {
+            int count = 0;
+            for (int i = 0; i < 8; i++)
+                for (int j = 0; j < 8; j++)
+                    if (board[i][j].equals(color)) count++;
+            return count;
+        }
 
+        public String checkWinner() {
+            int white = countPieces("w");
+            int black = countPieces("b");
+            if (white == 0) return player2; // black wins
+            if (black == 0) return player1; // white wins
+            return null; // no winner yet
+        }
     }
 
     private static final Map<String, CheckersGame> games = new HashMap<>();
@@ -133,11 +147,22 @@ public class GameServer {
             CheckersGame game = games.get(gameId);
 
             if (game != null) {
-                return gson.toJson(game);
+                Map<String, Object> state = new HashMap<>();
+                state.put("gameId", game.gameId);
+                state.put("player1", game.player1);
+                state.put("player2", game.player2);
+                state.put("currentTurn", game.currentTurn);
+                state.put("board", game.board);
+                state.put("whiteScore", game.countPieces("w"));
+                state.put("blackScore", game.countPieces("b"));
+                String winner = game.checkWinner();
+                if (winner != null) state.put("winner", winner);
+                return gson.toJson(state);
             } else {
                 return gson.toJson(Collections.singletonMap("error", "Not found"));
             }
         });
+
 
         // Handle a move with turn and move validation
         post("/move", (req, res) -> {
