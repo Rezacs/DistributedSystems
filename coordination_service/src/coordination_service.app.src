@@ -1,0 +1,16 @@
+{application, coordination_service,
+ [
+  {description, "Coordination Service"},
+  {vsn, "0.1.0"},
+  {registered, []},
+  {applications,
+   [kernel,
+    stdlib,
+    cowboy,
+    ranch,
+    crypto
+   ]},
+  {mod, {coordination_service_app, []}},
+  {env, []}
+ ]}.
+
