@@ -7,7 +7,8 @@ start(_StartType, _StartArgs) ->
     Dispatch = cowboy_router:compile([
         {'_', [
             {"/register", coordination_handler, []},
-            {"/deregister", coordination_handler, []}
+            {"/deregister", coordination_handler, []},
+            {"/servers", coordination_handler, []}
         ]}
     ]),
     {ok, _} = cowboy:start_clear(

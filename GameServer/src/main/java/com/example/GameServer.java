@@ -1,5 +1,6 @@
 package com.example;
 
+import kong.unirest.Unirest;
 import static spark.Spark.*;
 
 import java.util.*;
@@ -212,6 +213,28 @@ public class GameServer {
             }
             return gson.toJson(gameList);
         });
+
+        String coordinatorUrl = "http://localhost:8080";
+        String serverId = "srv1"; // Give each server a unique ID!
+        String host = "127.0.0.1";
+        int port = 8081; // Match this to your Spark port
+
+        // Register with Erlang coordinator on startup
+        Unirest.post(coordinatorUrl + "/register")
+            .header("Content-Type", "application/json")
+            .body("{\"server_id\":\"" + serverId + "\",\"host\":\"" + host + "\",\"port\":" + port + "}")
+            .asString();
+
+        // Start heartbeat thread
+        new Thread(() -> {
+            while (true) {
+                try { Thread.sleep(5000); } catch (InterruptedException e) {}
+                Unirest.post(coordinatorUrl + "/heartbeat")
+                    .header("Content-Type", "application/json")
+                    .body("{\"server_id\":\"" + serverId + "\"}")
+                    .asString();
+            }
+        }).start();
 
     }
 }
