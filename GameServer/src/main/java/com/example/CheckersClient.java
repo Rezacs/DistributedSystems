@@ -9,6 +9,8 @@ import kong.unirest.Unirest;
 import com.google.gson.*;
 import java.util.Map;
 import java.util.HashMap;
+import javafx.geometry.Insets;
+
 
 
 public class CheckersClient extends Application {
@@ -24,6 +26,10 @@ public class CheckersClient extends Application {
     private Map<String, String> gameIdByListItem = new HashMap<>();
 
 
+    private ListView<String> serversListView;
+    private Map<String, String> serverUrlByLabel = new HashMap<>();
+    private String selectedServerUrl = "http://localhost:8081";
+    private Button refreshServersButton;
 
     public static void main(String[] args) {
         launch(args);
@@ -40,6 +46,35 @@ public class CheckersClient extends Application {
         GridPane boardGrid = new GridPane();
         boardGrid.setGridLinesVisible(true);
 
+
+        serversListView = new ListView<>();
+        refreshServersButton = new Button("Refresh Servers");
+
+        refreshServersButton.setOnAction(e -> {
+            var res = Unirest.get("http://localhost:8080/servers").asString();
+            JsonArray arr = JsonParser.parseString(res.getBody()).getAsJsonArray();
+            serversListView.getItems().clear();
+            serverUrlByLabel.clear();
+            for (JsonElement el : arr) {
+                JsonObject obj = el.getAsJsonObject();
+                String host = obj.get("host").getAsString();
+                int port = obj.get("port").getAsInt();
+                String serverId = obj.get("server_id").getAsString();
+                String label = serverId + " - " + host + ":" + port;
+                String url = "http://" + host + ":" + port;
+                serversListView.getItems().add(label);
+                serverUrlByLabel.put(label, url);
+            }
+        });
+
+        serversListView.getSelectionModel().selectedItemProperty().addListener((obs, oldV, newV) -> {
+            if (newV != null) {
+                selectedServerUrl = serverUrlByLabel.get(newV);
+                System.out.println("Selected server: " + selectedServerUrl);
+            }
+        });
+
+
         // Set up gameIdField for copying the gameId
         gameIdField.setEditable(false);
         gameIdField.setPromptText("Game ID will appear here...");
@@ -49,7 +84,7 @@ public class CheckersClient extends Application {
         refreshBoard[0] = () -> {
             if (gameId == null || gameId.isEmpty()) return;
 
-            var res = Unirest.get("http://localhost:8081/gamestate/" + gameId).asString();
+            var res = Unirest.get(selectedServerUrl + "/gamestate/" + gameId).asString();
             JsonObject obj = JsonParser.parseString(res.getBody()).getAsJsonObject();
 
             if (!obj.has("board")) return;
@@ -111,7 +146,7 @@ public class CheckersClient extends Application {
                             move.addProperty("fromCol", fromCol);
                             move.addProperty("toRow", toRow);
                             move.addProperty("toCol", toCol);
-                            var resp = Unirest.post("http://localhost:8081/move")
+                            var resp = Unirest.post(selectedServerUrl + "/move")
                                 .header("Content-Type", "application/json")
                                 .body(move.toString())
                                 .asString();
@@ -138,7 +173,7 @@ public class CheckersClient extends Application {
 
         createButton.setOnAction(e -> {
             player = nameField.getText();
-            var res = Unirest.post("http://localhost:8081/newgame")
+            var res = Unirest.post(selectedServerUrl + "/newgame")
                     .header("Content-Type", "application/json")
                     .body("{\"player\":\"" + player + "\"}").asString();
             JsonObject obj = JsonParser.parseString(res.getBody()).getAsJsonObject();
@@ -161,7 +196,7 @@ public class CheckersClient extends Application {
                 return;
             }
 
-            var res = Unirest.post("http://localhost:8081/joingame")
+            var res = Unirest.post(selectedServerUrl + "/joingame")
                     .header("Content-Type", "application/json")
                     .body("{\"gameId\":\"" + gameId + "\",\"player\":\"" + player + "\"}")
                     .asString();
@@ -176,7 +211,7 @@ public class CheckersClient extends Application {
 
         Button refreshGamesButton = new Button("Refresh Game List");
         refreshGamesButton.setOnAction(e -> {
-            var res = Unirest.get("http://localhost:8081/games").asString();
+            var res = Unirest.get(selectedServerUrl + "/games").asString();
             JsonArray arr = JsonParser.parseString(res.getBody()).getAsJsonArray();
             gamesListView.getItems().clear();
             gameIdByListItem.clear();
@@ -211,6 +246,7 @@ public class CheckersClient extends Application {
 
         // 🧱 Layout setup
         VBox root = new VBox(8,
+            refreshServersButton, serversListView,
             new Label("Name:"), nameField,
             createButton,
             new Label("Or join by game ID:"),
@@ -223,10 +259,13 @@ public class CheckersClient extends Application {
             boardGrid,
             refreshGamesButton, gamesListView, joinSelectedButton
         );
+        root.setPadding(new Insets(10));
 
-
-        primaryStage.setScene(new Scene(root, 400, 900));
+        ScrollPane scrollPane = new ScrollPane(root);
+        scrollPane.setFitToWidth(true);
+        primaryStage.setScene(new Scene(scrollPane, 400, 1000));
         primaryStage.setTitle("Checkers Client");
         primaryStage.show();
+
     }
 }
