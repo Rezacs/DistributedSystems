@@ -131,12 +131,25 @@ public class CheckersClient extends Application {
             whitePlayerLabel.setText("White (W): " + player1);
             blackPlayerLabel.setText("Black (B): " + player2);
 
+            // p1Name and p2Name should be the names you parsed earlier in refreshBoard[0]
             if (obj.has("whiteScore") && obj.has("blackScore")) {
                 int w = obj.get("whiteScore").getAsInt();
                 int b = obj.get("blackScore").getAsInt();
                 piecesLabel.setText("Pieces left - W: " + w + ", B: " + b);
-                // ...winner logic...
+
+                if (w < 6 && b >= 6) {
+                    // Black (player2) wins
+                    winnerLabel.setText("WINNER: " + p2Name + " (Black) 🎉");
+                    turnLabel.setText("Game over!");
+                    // Optionally: disable the board or moves here
+                } else if (b < 6 && w >= 6) {
+                    // White (player1) wins
+                    winnerLabel.setText("WINNER: " + p1Name + " (White) 🎉");
+                    turnLabel.setText("Game over!");
+                    // Optionally: disable the board or moves here
+                }
             }
+
 
 
 
