@@ -1,10 +1,13 @@
 package com.example;
 
 import kong.unirest.Unirest;
+import kong.unirest.HttpResponse;
 import static spark.Spark.*;
-
 import java.util.*;
 import com.google.gson.Gson;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 
 public class GameServer {
 
@@ -69,19 +72,20 @@ public class GameServer {
             String color = getCurrentPlayerColor();
             if (!piece.equals(color)) return false; // can't move other's piece
 
+            boolean moved = false;
+
             // Simple move: single diagonal
             if (board[toRow][toCol].equals("empty") &&
                 Math.abs(toRow - fromRow) == 1 &&
                 Math.abs(toCol - fromCol) == 1) {
                 board[fromRow][fromCol] = "empty";
                 board[toRow][toCol] = piece;
-                // Switch turn
-                currentTurn = player.equals(player1) ? player2 : player1;
-                return true;
+                moved = true;
             }
 
             // Capture move: jump over enemy piece
-            if (board[toRow][toCol].equals("empty") &&
+            if (!moved &&
+                board[toRow][toCol].equals("empty") &&
                 Math.abs(toRow - fromRow) == 2 &&
                 Math.abs(toCol - fromCol) == 2) {
                 int midRow = (fromRow + toRow) / 2;
@@ -92,14 +96,42 @@ public class GameServer {
                     board[fromRow][fromCol] = "empty";
                     board[midRow][midCol] = "empty";
                     board[toRow][toCol] = piece;
-                    // Switch turn
-                    currentTurn = player.equals(player1) ? player2 : player1;
-                    return true;
+                    moved = true;
                 }
+            }
+
+            if (moved) {
+                // Switch turn
+                currentTurn = player.equals(player1) ? player2 : player1;
+
+                // 🔁 Save game state after move
+                try {
+                    String gameJson = serializeGameState(); // implement this method
+                    Unirest.post("http://localhost:8080/savegame")
+                        .header("Content-Type", "application/json")
+                        .body(gameJson)
+                        .asString();
+                } catch (Exception e) {
+                    e.printStackTrace(); // optionally handle error
+                }
+
+                return true;
             }
 
             return false;
         }
+
+        public String serializeGameState() throws JsonProcessingException {
+            ObjectMapper mapper = new ObjectMapper();
+            Map<String, Object> gameData = new HashMap<>();
+            gameData.put("game_id", gameId);       // must include game_id
+            gameData.put("board", board);          // 2D array of board state
+            gameData.put("current_turn", currentTurn);
+            // Add other fields if necessary
+            return mapper.writeValueAsString(gameData);
+        }
+
+
         public int countPieces(String color) {
             int count = 0;
             for (int i = 0; i < 8; i++)
@@ -121,7 +153,10 @@ public class GameServer {
     private static final Gson gson = new Gson();
 
     public static void main(String[] args) {
-        port(8081);
+        int port = 8081;
+        String serverId = "srv1";
+        if (args.length >= 1) port = Integer.parseInt(args[0]);
+        if (args.length >= 2) serverId = args[1];
 
         // Create a new game
         post("/newgame", (req, res) -> {
@@ -220,21 +255,24 @@ public class GameServer {
         int port = 8081; // Match this to your Spark port
 
         // Register with Erlang coordinator on startup
-        Unirest.post(coordinatorUrl + "/register")
+        HttpResponse<String> regResp = Unirest.post(coordinatorUrl + "/register")
             .header("Content-Type", "application/json")
             .body("{\"server_id\":\"" + serverId + "\",\"host\":\"" + host + "\",\"port\":" + port + "}")
             .asString();
+        System.out.println("Register response: " + regResp.getStatus() + " " + regResp.getBody());
 
         // Start heartbeat thread
         new Thread(() -> {
             while (true) {
                 try { Thread.sleep(5000); } catch (InterruptedException e) {}
-                Unirest.post(coordinatorUrl + "/heartbeat")
+                HttpResponse<String> hbResp = Unirest.post(coordinatorUrl + "/heartbeat")
                     .header("Content-Type", "application/json")
                     .body("{\"server_id\":\"" + serverId + "\"}")
                     .asString();
+                System.out.println("Heartbeat response: " + hbResp.getStatus() + " " + hbResp.getBody());
             }
         }).start();
+
 
     }
 }

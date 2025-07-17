@@ -14,6 +14,10 @@ init(Req0, State) ->
             handle_servers(Req0, State);
         {<<"/deregister">>, <<"POST">>} ->
             handle_deregister(Req0, State);
+        {<<"/savegame">>, <<"POST">>} ->
+            handle_savegame(Req0, State);
+        {<<"/getgame">>, <<"GET">>} ->
+            handle_getgame(Req0, State);
         _ ->
             reply_json(405, <<"{\"error\": \"Method Not Allowed or Unknown Path\"}">>, Req0, State)
     end.
@@ -27,6 +31,8 @@ handle_register(Req, State) ->
             ServerId = maps:get(<<"server_id">>, Map, undefined),
             Host = maps:get(<<"host">>, Map, undefined),
             Port = maps:get(<<"port">>, Map, undefined),
+            %% Debug print:
+            io:format("Received register for ~p~n", [ServerId]),
             Now = erlang:system_time(second),
             case {ServerId, Host, Port} of
                 {undefined, _, _} -> reply_json(400, <<"{\"error\": \"Missing server_id\"}">>, Req1, State);
@@ -46,6 +52,8 @@ handle_heartbeat(Req, State) ->
             reply_json(400, <<"{\"error\": \"Invalid JSON\"}">>, Req1, State);
         Map when is_map(Map) ->
             ServerId = maps:get(<<"server_id">>, Map, undefined),
+            %% Debug print:
+            io:format("Received heartbeat for ~p~n", [ServerId]),
             Now = erlang:system_time(second),
             case ets:lookup(server_registry, ServerId) of
                 [{ServerId, Host, Port, _OldLastSeen}] ->
@@ -56,6 +64,7 @@ handle_heartbeat(Req, State) ->
             end;
         _ -> reply_json(400, <<"{\"error\": \"Invalid JSON\"}">>, Req1, State)
     end.
+
 
 handle_servers(Req, State) ->
     Now = erlang:system_time(second),
@@ -85,8 +94,32 @@ handle_deregister(Req, State) ->
         _ -> reply_json(400, <<"{\"error\": \"Invalid JSON\"}">>, Req1, State)
     end.
 
+%% Save game state
+handle_savegame(Req, State) ->
+    {ok, Body, Req1} = cowboy_req:read_body(Req),
+    case catch jsx:decode(Body, [return_maps]) of
+        {'EXIT', _} -> reply_json(400, <<"{\"error\":\"Invalid JSON\"}">>, Req1, State);
+        Map when is_map(Map) ->
+            GameId = maps:get(<<"game_id">>, Map, undefined),
+            case GameId of
+                undefined -> reply_json(400, <<"{\"error\":\"Missing game_id\"}">>, Req1, State);
+                _ -> ets:insert(game_sessions, {GameId, Map}),
+                     reply_json(200, <<"{\"status\": \"saved\"}">>, Req1, State)
+            end;
+        _ -> reply_json(400, <<"{\"error\":\"Invalid JSON\"}">>, Req1, State)
+    end.
+
+%% Get game state
+handle_getgame(Req, State) ->
+    {GameId, Req1} = cowboy_req:binding(game_id, Req),
+    case ets:lookup(game_sessions, GameId) of
+        [{_, Game}] -> reply_json(200, jsx:encode(Game), Req1, State);
+        [] -> reply_json(404, <<"{\"error\":\"Not found\"}">>, Req1, State)
+    end.
+
+
 reply_json(Code, Body, Req, State) ->
-    {ok, Req2} = cowboy_req:reply(
+        Req2 = cowboy_req:reply(
         Code,
         #{<<"content-type">> => <<"application/json">>},
         Body,
