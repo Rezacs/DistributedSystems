@@ -18,14 +18,14 @@ public class GameServer {
 
     // Represents a single checkers game
     static class CheckersGame {
-        String gameId;
-        String player1;
-        String player2;
-        String[][] board = new String[8][8];
-        String currentTurn;
+        public String gameId;       // <-- Declare gameId here!
+        public String player1;
+        public String player2;
+        public String[][] board = new String[8][8];
+        public String currentTurn;
 
         public CheckersGame(String gameId, String player1) {
-            this.gameId = gameId;
+            this.gameId = gameId;   // <-- Initialize gameId from constructor parameter!
             this.player1 = player1;
             this.player2 = null;
             this.currentTurn = player1;
@@ -55,10 +55,12 @@ public class GameServer {
                 // Allow rejoining by original players
                 return true;
             }
+            // Only allow a new player if player2 slot is open
             if (player2 == null && !player.equals(player1)) {
                 player2 = player;
                 return true;
             }
+            // If both slots are filled, do NOT allow joining at all
             return false;
         }
 
@@ -186,44 +188,61 @@ public class GameServer {
             String gameId = body.get("gameId");
             String player = body.get("player");
 
-            System.out.println("JOIN attempt: player='" + player + "' gameId='" + gameId + "'");
-
-            // Don't allow null/empty names
             if (player == null || player.trim().isEmpty()) {
                 return gson.toJson(Collections.singletonMap("error", "Name required"));
             }
 
             CheckersGame game = games.get(gameId);
-            if (game != null && game.join(player)) {
-                return gson.toJson(Collections.singletonMap("status", "joined"));
+
+            // Strictly prevent new joins if both slots are filled and name doesn't match
+            if (game != null) {
+                boolean canJoin = game.join(player);
+                if (canJoin) {
+                    return gson.toJson(Collections.singletonMap("status", "joined"));
+                } else if (game.player1 != null && game.player2 != null) {
+                    // Both slots filled, and name doesn't match
+                    return gson.toJson(Collections.singletonMap("error", "Game full: cannot join as a third player"));
+                } else {
+                    return gson.toJson(Collections.singletonMap("error", "Cannot join"));
+                }
             } else {
-                return gson.toJson(Collections.singletonMap("error", "Cannot join"));
+                return gson.toJson(Collections.singletonMap("error", "Game not found"));
             }
         });
+
 
 
 
         // Get current game state
         get("/gamestate/:gameId", (req, res) -> {
             String gameId = req.params("gameId");
+            String player = req.queryParams("player"); // Require player name!
             CheckersGame game = games.get(gameId);
 
-            if (game != null) {
-                Map<String, Object> state = new HashMap<>();
-                state.put("gameId", game.gameId);
-                state.put("player1", game.player1);
-                state.put("player2", game.player2);
-                state.put("currentTurn", game.currentTurn);
-                state.put("board", game.board);
-                state.put("whiteScore", game.countPieces("w"));
-                state.put("blackScore", game.countPieces("b"));
-                String winner = game.checkWinner();
-                if (winner != null) state.put("winner", winner);
-                return gson.toJson(state); // <--- must be return!
-            } else {
-                return gson.toJson(Collections.singletonMap("error", "Not found")); // <--- must be return!
+            if (game == null) {
+                return gson.toJson(Collections.singletonMap("error", "Not found"));
             }
+
+            // Only allow access if requester is player1 or player2
+            if (player == null || !(player.equals(game.player1) || player.equals(game.player2))) {
+                return gson.toJson(Collections.singletonMap("error", "You are not a player in this game!"));
+            }
+
+            // Return game state
+            Map<String, Object> state = new HashMap<>();
+            state.put("gameId", game.gameId);
+            state.put("player1", game.player1);
+            state.put("player2", game.player2);
+            state.put("currentTurn", game.currentTurn);
+            state.put("board", game.board);
+            state.put("whiteScore", game.countPieces("w"));
+            state.put("blackScore", game.countPieces("b"));
+            String winner = game.checkWinner();
+            if (winner != null) state.put("winner", winner);
+            return gson.toJson(state);
         });
+
+
 
 
 

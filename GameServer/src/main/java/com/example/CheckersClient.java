@@ -84,7 +84,9 @@ public class CheckersClient extends Application {
         refreshBoard[0] = () -> {
             if (gameId == null || gameId.isEmpty()) return;
 
-            var res = Unirest.get(selectedServerUrl + "/gamestate/" + gameId).asString();
+            var res = Unirest.get(selectedServerUrl + "/gamestate/" + gameId)
+            .queryString("player", player)
+            .asString();
             JsonObject obj = JsonParser.parseString(res.getBody()).getAsJsonObject();
 
             if (!obj.has("board")) return;
@@ -279,6 +281,6 @@ public class CheckersClient extends Application {
         primaryStage.setScene(new Scene(root, 420, 700)); // Adjust size as you like
         primaryStage.setTitle("Checkers Client");
         primaryStage.show();
-        
+
     }
 }
