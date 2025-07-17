@@ -245,27 +245,40 @@ public class CheckersClient extends Application {
 
 
         // 🧱 Layout setup
-        VBox root = new VBox(8,
+        // LEFT: Lobby and controls
+        VBox leftBox = new VBox(8,
             refreshServersButton, serversListView,
             new Label("Name:"), nameField,
             createButton,
             new Label("Or join by game ID:"),
             joinGameField, joinButton,
             statusLabel,
-            new Label("Current Game ID:"), gameIdField,
-            turnLabel,    // <--- add this
-            piecesLabel,  // <-- add
-            winnerLabel,
-            boardGrid,
             refreshGamesButton, gamesListView, joinSelectedButton
         );
-        root.setPadding(new Insets(10));
+        leftBox.setPrefWidth(230); // You can adjust width
 
-        ScrollPane scrollPane = new ScrollPane(root);
-        scrollPane.setFitToWidth(true);
-        primaryStage.setScene(new Scene(scrollPane, 400, 1000));
+        // RIGHT: Game info and board
+        VBox rightBox = new VBox(8,
+            new Label("Current Game ID:"), gameIdField,
+            turnLabel,
+            piecesLabel,
+            winnerLabel,
+            boardGrid
+        );
+        rightBox.setPrefWidth(170);
+
+        // Combine left and right in an HBox
+        HBox root = new HBox(leftBox, rightBox);
+
+        // Optional: add padding and spacing
+        root.setSpacing(10);
+        leftBox.setPadding(new Insets(10));
+        rightBox.setPadding(new Insets(10));
+
+        // Show in window
+        primaryStage.setScene(new Scene(root, 420, 700)); // Adjust size as you like
         primaryStage.setTitle("Checkers Client");
         primaryStage.show();
-
+        
     }
 }
