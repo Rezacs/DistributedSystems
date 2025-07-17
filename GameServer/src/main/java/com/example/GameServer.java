@@ -11,6 +11,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class GameServer {
 
+    private static String serverId = "srv1";
+    private static int port = 8081;
+    private static String coordinatorUrl = "http://localhost:8080";
+    private static String host = "127.0.0.1";
+
     // Represents a single checkers game
     static class CheckersGame {
         String gameId;
@@ -153,17 +158,17 @@ public class GameServer {
     private static final Gson gson = new Gson();
 
     public static void main(String[] args) {
-        try {
-            int port = 8081;
-            String serverId = "srv1";
-            if (args.length > 0) port = Integer.parseInt(args[0]);
-            if (args.length > 1) serverId = args[1];
-            port(port);
-            System.out.println("Starting server " + serverId + " on port " + port);
-            // ... rest of your code
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        if (args.length > 0) port = Integer.parseInt(args[0]);
+        if (args.length > 1) serverId = args[1];
+        port(port);
+        System.out.println("Starting server " + serverId + " on port " + port);
+
+        // Register with Erlang coordinator on startup
+        HttpResponse<String> regResp = Unirest.post(coordinatorUrl + "/register")
+            .header("Content-Type", "application/json")
+            .body("{\"server_id\":\"" + serverId + "\",\"host\":\"" + host + "\",\"port\":" + port + "}")
+            .asString();
+        System.out.println("Register response: " + regResp.getStatus() + " " + regResp.getBody());
 
         // Create a new game
         post("/newgame", (req, res) -> {
@@ -255,18 +260,6 @@ public class GameServer {
             }
             return gson.toJson(gameList);
         });
-
-        String coordinatorUrl = "http://localhost:8080";
-        String serverId = "srv1"; // Give each server a unique ID!
-        String host = "127.0.0.1";
-        int port = 8081; // Match this to your Spark port
-
-        // Register with Erlang coordinator on startup
-        HttpResponse<String> regResp = Unirest.post(coordinatorUrl + "/register")
-            .header("Content-Type", "application/json")
-            .body("{\"server_id\":\"" + serverId + "\",\"host\":\"" + host + "\",\"port\":" + port + "}")
-            .asString();
-        System.out.println("Register response: " + regResp.getStatus() + " " + regResp.getBody());
 
         // Start heartbeat thread
         new Thread(() -> {
