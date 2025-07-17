@@ -153,10 +153,17 @@ public class GameServer {
     private static final Gson gson = new Gson();
 
     public static void main(String[] args) {
-        int port = 8081;
-        String serverId = "srv1";
-        if (args.length >= 1) port = Integer.parseInt(args[0]);
-        if (args.length >= 2) serverId = args[1];
+        try {
+            int port = 8081;
+            String serverId = "srv1";
+            if (args.length > 0) port = Integer.parseInt(args[0]);
+            if (args.length > 1) serverId = args[1];
+            port(port);
+            System.out.println("Starting server " + serverId + " on port " + port);
+            // ... rest of your code
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         // Create a new game
         post("/newgame", (req, res) -> {
