@@ -22,6 +22,10 @@ public class CheckersClient extends Application {
     private Label turnLabel = new Label("Turn: ");
     private Label winnerLabel = new Label("Winner: ");
     private Label piecesLabel = new Label("Pieces left - W: 12, B: 12");
+
+    private Label whitePlayerLabel = new Label("White (W): ");
+    private Label blackPlayerLabel = new Label("Black (B): ");
+
     private ListView<String> gamesListView = new ListView<>();
     private Map<String, String> gameIdByListItem = new HashMap<>();
 
@@ -93,29 +97,47 @@ public class CheckersClient extends Application {
 
             // Show whose turn it is
             String whoseTurn = obj.has("currentTurn") ? obj.get("currentTurn").getAsString() : "";
-            if (!whoseTurn.isEmpty() && player != null) {
-                if (player.equals(whoseTurn)) {
-                    statusLabel.setText("It's your turn!");
+            String p1Name = obj.has("player1") && !obj.get("player1").isJsonNull() ? obj.get("player1").getAsString() : "";
+            String p2Name = obj.has("player2") && !obj.get("player2").isJsonNull() ? obj.get("player2").getAsString() : "";
+
+            // Use p1Name and p2Name below
+            if (!whoseTurn.isEmpty()) {
+                String turnPlayerName = "";
+                if (whoseTurn.equals(p1Name)) {
+                    turnPlayerName = p1Name + " (White)";
+                } else if (whoseTurn.equals(p2Name)) {
+                    turnPlayerName = p2Name + " (Black)";
                 } else {
-                    statusLabel.setText("Waiting for " + whoseTurn + " ...");
+                    turnPlayerName = whoseTurn;
+                }
+                turnLabel.setText("Turn: " + turnPlayerName);
+
+                if (player != null) {
+                    if (player.equals(whoseTurn)) {
+                        statusLabel.setText("It's your turn!");
+                    } else {
+                        statusLabel.setText("Waiting for " + turnPlayerName + " ...");
+                    }
                 }
             }
 
+
+
             // After updating turnLabel:
+            String player1 = obj.has("player1") && !obj.get("player1").isJsonNull() ? obj.get("player1").getAsString() : "";
+            String player2 = obj.has("player2") && !obj.get("player2").isJsonNull() ? obj.get("player2").getAsString() : "";
+
+            // Assume: player1 is always white, player2 is always black (if both are set)
+            whitePlayerLabel.setText("White (W): " + player1);
+            blackPlayerLabel.setText("Black (B): " + player2);
+
             if (obj.has("whiteScore") && obj.has("blackScore")) {
                 int w = obj.get("whiteScore").getAsInt();
                 int b = obj.get("blackScore").getAsInt();
                 piecesLabel.setText("Pieces left - W: " + w + ", B: " + b);
-
-                // New: If any side has less than 6, declare the other side as winner!
-                if (w < 6 && b >= 6) {
-                    winnerLabel.setText("WINNER: Black (B) 🎉");
-                    turnLabel.setText("Game over!");
-                } else if (b < 6 && w >= 6) {
-                    winnerLabel.setText("WINNER: White (W) 🎉");
-                    turnLabel.setText("Game over!");
-                }
+                // ...winner logic...
             }
+
 
 
 
@@ -262,6 +284,8 @@ public class CheckersClient extends Application {
         // RIGHT: Game info and board
         VBox rightBox = new VBox(8,
             new Label("Current Game ID:"), gameIdField,
+            whitePlayerLabel,
+            blackPlayerLabel,
             turnLabel,
             piecesLabel,
             winnerLabel,
