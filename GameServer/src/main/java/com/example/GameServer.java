@@ -14,7 +14,7 @@ public class GameServer {
     private static String serverId = "srv1";
     private static int port = 8081;
     private static String coordinatorUrl = "http://10.2.1.54:8080";
-    private static String host = "127.0.0.1";
+    private static String host = "10.2.1.54";
 
     // Represents a single checkers game
     static class CheckersGame {
