@@ -13,7 +13,7 @@ public class GameServer {
 
     private static String serverId = "srv1";
     private static int port = 8081;
-    private static String coordinatorUrl = "http://localhost:8080";
+    private static String coordinatorUrl = "http://10.2.1.54:8080";
     private static String host = "127.0.0.1";
 
     // Represents a single checkers game
@@ -114,7 +114,7 @@ public class GameServer {
                 // 🔁 Save game state after move
                 try {
                     String gameJson = serializeGameState(); // implement this method
-                    Unirest.post("http://localhost:8080/savegame")
+                    Unirest.post("http://10.2.1.54:8080/savegame")
                         .header("Content-Type", "application/json")
                         .body(gameJson)
                         .asString();

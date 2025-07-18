@@ -32,7 +32,7 @@ public class CheckersClient extends Application {
 
     private ListView<String> serversListView;
     private Map<String, String> serverUrlByLabel = new HashMap<>();
-    private String selectedServerUrl = "http://localhost:8081";
+    private String selectedServerUrl = "http://10.2.1.54:8081";
     private Button refreshServersButton;
 
     public static void main(String[] args) {
@@ -55,7 +55,7 @@ public class CheckersClient extends Application {
         refreshServersButton = new Button("Refresh Servers");
 
         refreshServersButton.setOnAction(e -> {
-            var res = Unirest.get("http://localhost:8080/servers").asString();
+            var res = Unirest.get("http://10.2.1.54:8080/servers").asString();
             JsonArray arr = JsonParser.parseString(res.getBody()).getAsJsonArray();
             serversListView.getItems().clear();
             serverUrlByLabel.clear();
