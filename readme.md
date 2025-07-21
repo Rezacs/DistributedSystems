@@ -80,5 +80,5 @@ Browse available servers, create/join games, and play.
 
 ## Credits
 
-Developed by [Your Name] for Distributed Systems & Middleware Technologies @ University of Pisa, 2024/2025.  
+Developed by Reza Almassi for Distributed Systems & Middleware Technologies @ University of Pisa, 2024/2025.  
 Supervisor: Prof. Alessio Bechini
